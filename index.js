@@ -3,7 +3,12 @@ const app = express();
 require("dotenv").config();
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const {
+  MongoClient,
+  ServerApiVersion,
+  ObjectId,
+  Timestamp,
+} = require("mongodb");
 const jwt = require("jsonwebtoken");
 
 const port = process.env.PORT || 8000;
@@ -48,6 +53,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const roomsCollection = client.db("airBnb").collection("rooms");
+    const userCollection = client.db("airBnb").collection("users");
 
     // auth related api
     app.post("/jwt", async (req, res) => {
@@ -79,6 +85,38 @@ async function run() {
       }
     });
 
+    app.put("/user", async (req, res) => {
+      const user = req.body;
+      const isExist = await userCollection.findOne({ email: user?.email });
+      if (isExist) {
+        return res.send(isExist);
+      } else {
+        const query = { email: user.email };
+        const options = { upsert: true };
+        const updateDoc = {
+          $set: {
+            ...user,
+            timestamp: Date.now(),
+          },
+        };
+
+        const result = await userCollection.updateOne(
+          query,
+          updateDoc,
+          options
+        );
+        // console.log("User updated:", result);
+        res.send(result);
+      }
+    });
+
+    // get all users
+
+    app.get("/users", async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
+
     // get All rooms
     app.get("/rooms", async (req, res) => {
       const category = req.query.category;
@@ -97,6 +135,26 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await roomsCollection.findOne(query);
+      res.send(result);
+    });
+
+    // save all room database post request
+    app.post("/room", async (req, res) => {
+      const roomData = req.body;
+      const result = await roomsCollection.insertOne(roomData);
+      res.send(result);
+    });
+    // get all room by host
+    app.get("/my-listings/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { "host.email": email };
+      const result = await roomsCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.delete("/room/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await roomsCollection.deleteOne(query);
       res.send(result);
     });
 
