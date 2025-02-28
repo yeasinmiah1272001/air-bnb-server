@@ -133,6 +133,16 @@ async function run() {
       res.send(result);
     });
 
+    // user role update
+    app.patch("/user/update/:email", async (req, res) => {
+      const user = req.body;
+      const email = req.params.email;
+      const query = { email };
+      const updateDoc = { $set: { ...user, timestamp: Date.now() } };
+      const result = await userCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
+
     // get All rooms
     app.get("/rooms", async (req, res) => {
       const category = req.query.category;
