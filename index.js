@@ -29,7 +29,7 @@ const verifyToken = async (req, res, next) => {
   const token = req.cookies?.token;
   console.log(token);
   if (!token) {
-    return res.status(401).send({ message: "unauthorized access" });
+    return res.status(401).send({ message: "unauthorized access!" });
   }
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
     if (err) {
@@ -55,12 +55,24 @@ async function run() {
     const roomsCollection = client.db("airBnb").collection("rooms");
     const userCollection = client.db("airBnb").collection("users");
 
+    // veryfy admin
+    const veryfyAdmin = async (req, res, next) => {
+      const user = req.user;
+      const query = { email: user?.email };
+      const result = await userCollection.findOne(query);
+      if (!result || result?.role !== "admin") {
+        return res.status(401).send({ message: "unautheized access!!" });
+      }
+      next();
+    };
+
     // auth related api
     app.post("/jwt", async (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: "365d",
+        expiresIn: "1h",
       });
+      console.log("took ", token);
       res
         .cookie("token", token, {
           httpOnly: true,
@@ -87,6 +99,7 @@ async function run() {
 
     app.put("/user", async (req, res) => {
       const user = req.body;
+      console.log("hellow");
       const query = { email: user.email };
       const isExist = await userCollection.findOne({ email: user?.email });
       if (isExist) {
@@ -119,7 +132,7 @@ async function run() {
 
     // get all users
 
-    app.get("/users", async (req, res) => {
+    app.get("/users", verifyToken, veryfyAdmin, async (req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
     });
