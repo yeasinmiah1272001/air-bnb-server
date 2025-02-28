@@ -124,6 +124,15 @@ async function run() {
       res.send(result);
     });
 
+    // get user by email db
+    app.get("/user/:email", async (req, res) => {
+      const user = req.body;
+      const email = req.params.email;
+      // const query = { email };
+      const result = await userCollection.findOne({ email });
+      res.send(result);
+    });
+
     // get All rooms
     app.get("/rooms", async (req, res) => {
       const category = req.query.category;
