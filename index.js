@@ -56,6 +56,7 @@ async function run() {
   try {
     const roomsCollection = client.db("airBnb").collection("rooms");
     const userCollection = client.db("airBnb").collection("users");
+    const bookingCollections = client.db("airBnb").collection("bookings");
 
     // veryfy admin
     const veryfyAdmin = async (req, res, next) => {
@@ -216,6 +217,26 @@ async function run() {
       });
       // send client secret as response
       res.send({ clientSecret: client_secret });
+    });
+
+    // save payment booking
+
+    app.post("/booking", async (req, res) => {
+      const booningData = req.body;
+      const result = await bookingCollections.insertOne(booningData);
+      res.send(result);
+    });
+
+    // update room status
+    app.patch("/room/status/:id", async (req, res) => {
+      const id = req.params.id;
+      const status = req.body.status;
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: { booked: status },
+      };
+      const result = await roomsCollection.updateOne(query, updateDoc);
+      res.send(result);
     });
 
     // Send a ping to confirm a successful connection
