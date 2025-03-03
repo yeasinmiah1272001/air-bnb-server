@@ -200,23 +200,22 @@ async function run() {
     });
 
     // payment
-    app.post("/create-checkout-session", async (req, res) => {
+    // create-payment-intent
+    app.post("/create-payment-intent", async (req, res) => {
       const price = req.body.price;
-      console.log("price", price);
-      const amount = parseInt(price * 100);
-      if (price || amount < 1) return;
-      try {
-        const paymentIntent = await stripe.paymentIntents.create({
-          amount: amount,
-          currency: "usd",
-          payment_method_types: ["card"],
-        });
-        res.send({
-          clientSecret: paymentIntent.client_secret,
-        });
-      } catch (error) {
-        res.status(500).send({ error: error.message });
-      }
+      const priceInCent = parseFloat(price) * 100;
+      if (!price || priceInCent < 1) return;
+      // generate clientSecret
+      const { client_secret } = await stripe.paymentIntents.create({
+        amount: priceInCent,
+        currency: "usd",
+        // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      });
+      // send client secret as response
+      res.send({ clientSecret: client_secret });
     });
 
     // Send a ping to confirm a successful connection
